@@ -3,16 +3,21 @@ SeekerBot is a discord bot used for tracking Transformers TCG match reports.
 
 # Usage
 
-SeekerBot supports 3 commands.
-
 ## Report
 Reports a single match result.
 
-`!report [user1] [deck1] [games won] [user2] [deck2] [games won]`
+`!report @[user1] [games won] @[user2] [games won]`
+
+For example:
+
+`!report @player1 2 @player2 0`
 
 ## Stats
 Queries the stats of a single user within the given time frame.
 
+`!stats @[user1]`
 
 ## Leaderboard
-Gets the users that won the most within the given time frame.
+Gets the users that won the most within the given time frame. Defaults to weekly leaderboards. 
+
+`!leaderboard [week|month|year]`
