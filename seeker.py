@@ -99,7 +99,7 @@ async def report(ctx, user1: User, user1_games: int, user1_deck: str, user2: Use
     await ctx.send(message)
 
 @bot.command(name='stats')
-async def stats(ctx, time, user):
+async def stats(ctx, user, time='week'):
     pass
 
 @bot.command(name='leaderboard')
