@@ -7,48 +7,22 @@ from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('')
+MATCH_DB = 'league.db'
 
-conn = sqlite3.connect('league.db')
 bot = commands.Bot(command_prefix='!')
 
-def setup_database():
-    create_user_table = '''CREATE TABLE IF NOT EXISTS users
-                        (user_id INTEGER PRIMARY KEY,
-                        name TEXT NOT_NULL)'''
-    create_match_table = '''CREATE TABLE IF NOT EXISTS matches
-                     (match_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                     date INTEGER NOT NULL)'''
-    create_report_table = '''CREATE TABLE IF NOT EXISTS reports
-                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    match_id INTEGER NOT NULL,
-                    games INTEGER NOT NULL,
-                    deck TEXT,
-                    FOREIGN KEY (user_id)
-                        REFERENCES users (user_id),
-                    FOREIGN KEY (match_id)
-                        REFERENCES matches (match_id))
-    '''
-    c = conn.cursor()
-    c.execute(create_user_table)
-    c.execute(create_match_table)
-    c.execute(create_report_table)
-    conn.commit()
-    c.close()
-
 def create_user_entry(user: User):
+    conn = sqlite3.connect(MATCH_DB)
     c = conn.cursor()
-    statement = '''SELECT user_id FROM users WHERE user_id=(?)'''
-    c.execute(statement, (user.id))
-    if c.fetchone():
-        return
-    statement = '''INSERT INTO users (user_id, name) VALUES (?, ?)'''
-    c.execute(statement, (user.id, str(user)))
-    conn.commit()
+    c.execute('SELECT user_id FROM users WHERE user_id=(?)', (user.id,))
+    if c.fetchone() is None:
+        statement = '''INSERT INTO users (user_id, name) VALUES (?, ?)'''
+        c.execute(statement, (user.id, str(user)))
+        conn.commit()
     c.close()
 
 def create_match_entry():
+    conn = sqlite3.connect(MATCH_DB)
     statement = '''INSERT INTO matches (date) VALUES (strftime('%s', 'now'))'''
     c = conn.cursor()
     c.execute(statement)
@@ -58,19 +32,26 @@ def create_match_entry():
     return match_id
 
 def create_report_entry(user: User, match_id: int, games: int, deck: str):
+    conn = sqlite3.connect(MATCH_DB)
     statement = '''INSERT INTO reports (user_id, match_id, games, deck) VALUES(?, ?, ?, ?)'''
     c = conn.cursor()
     c.execute(statement, (user.id, match_id, games, deck))
     conn.commit()
     c.close()
 
+def get_leaderboard():
+    conn = sqlite3.connect(MATCH_DB)
+    statement = '''SELECT name, count(user_id) 
+                FROM users, reports 
+                GROUPBY reports.user_id
+                ORDERBY count(reports.user_id)
+                WHERE users.user_id = reports.user_id
+                '''
+
 @bot.event
 async def on_ready():
     for guild in bot.guilds:
         print(guild)
-        if guild.name == GUILD:
-            break
-    setup_database()
 
 @bot.command(name='report')
 async def report(ctx, user1: User, user1_games: int, user1_deck: str, user2: User, user2_games: int, user2_deck: str):
@@ -80,10 +61,7 @@ async def report(ctx, user1: User, user1_games: int, user1_deck: str, user2: Use
     create_report_entry(user1, match_id, user1_games, user1_deck)
     create_report_entry(user2, match_id, user2_games, user2_deck)
 
-    if (user1 in bot.users):
-        print(user1)
-        print(user1.id)
-        print(user1.mention)
+    
     match_report = {}
     if user1_games >= user2_games:
         match_report['winner'] = user1
@@ -95,7 +73,7 @@ async def report(ctx, user1: User, user1_games: int, user1_deck: str, user2: Use
         match_report['winner_games'] = user2_games
         match_report['loser'] = user1
         match_report['loser_games'] = user1_games
-    message = f"{match_report['winner'].mention} {match_report['winner_games']}-{match_report['loser_games']} {match_report['loser'].mention}"
+    message = f"Match Report: {match_report['winner'].mention} {match_report['winner_games']}-{match_report['loser_games']} {match_report['loser'].mention}"
     await ctx.send(message)
 
 @bot.command(name='stats')
@@ -103,7 +81,7 @@ async def stats(ctx, user, time='week'):
     pass
 
 @bot.command(name='leaderboard')
-async def leaderboard(ctx):
+async def leaderboard(ctx, time='week'):
     pass
 
 bot.run(TOKEN)

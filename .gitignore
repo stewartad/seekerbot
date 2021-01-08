@@ -1,2 +1,4 @@
 seeker-env
 .env
+*.sql
+*.db
