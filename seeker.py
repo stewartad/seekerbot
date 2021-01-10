@@ -7,7 +7,7 @@ from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-MATCH_DB = os.getenv('MATCH_DB')
+DATABASE = ''
 
 bot = commands.Bot(command_prefix='!')
 
@@ -24,11 +24,7 @@ async def report(ctx, user1: User, user1_games: int, user2: User, user2_games: i
     if user2 not in bot.users:
         await ctx.send(f'User {user2} not found')
         return
-    create_user_entry(user1)
-    create_user_entry(user2)
-    match_id = create_match_entry()
-    create_report_entry(user1, match_id, user1_games)
-    create_report_entry(user2, match_id, user2_games)
+    report_match(ctx.guild.id, user1, user1_games, user2, user2_games)
 
     match_report = {}
     if user1_games >= user2_games:
@@ -45,8 +41,20 @@ async def report(ctx, user1: User, user1_games: int, user2: User, user2_games: i
     await ctx.send(message)
 
 @bot.command(name='stats')
-async def stats(ctx, user):
-    pass
+async def stats(ctx, user: User):
+    if user not in bot.users:
+        await ctx.send(f'User {user} not found')
+        return
+    week_timestamp = get_starting_timestamp('week')
+    result = get_stat(week_timestamp, user.id)
+
+    month_timestamp = get_starting_timestamp('month')
+    result = get_stat(month_timestamp, user.id)
+
+    year_timestamp = get_starting_timestamp('year')
+    result = get_stat(year_timestamp, user.id)
+
+    result = get_stat(0, user.id)
 
 @bot.command(name='leaderboard')
 async def leaderboard(ctx, time='week'):
@@ -54,7 +62,7 @@ async def leaderboard(ctx, time='week'):
     if timestamp is None:
         await ctx.send(f'Invalid time {time}')
         return
-    results = get_leaderboard(timestamp)
+    results = get_leaderboard(ctx.guild.id, timestamp)
     
     header_str = '{:2}. {:<16} {:<6} {:<6} {:4}'
     entry_str = '{:2}. {:<16} {:<6} {:<6} {:.2%}'

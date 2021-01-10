@@ -3,11 +3,50 @@ import os
 from discord.user import User
 from dotenv import load_dotenv
 
-load_dotenv()
-MATCH_DB = os.getenv('MATCH_DB')
+def report_match(guild_id: int, user1: User, user1_games: int, user2: User, user2_games: int):
+    db = _check_db(guild_id)
 
-def create_user_entry(user: User):
-    conn = sqlite3.connect(MATCH_DB)
+    _create_user_entry(db, user1)
+    _create_user_entry(db, user2)
+    match_id = _create_match_entry(db)
+    _create_report_entry(db, user1, match_id, user1_games)
+    _create_report_entry(db, user2, match_id, user2_games)
+
+def _check_db(guild_id: int):
+    db = f'{guild_id}.db'
+    if not os.path.exists(db):
+        _create_db(db)
+    return db
+
+def _create_db(database: str):
+    conn = sqlite3.connect(database)
+    c = conn.cursor()
+    c.executescript('''
+        CREATE TABLE users (
+        user_id INTEGER PRIMARY KEY,
+        name TEXT NOT_NULL
+        );
+
+        CREATE TABLE matches (
+            match_id INTEGER PRIMARY KEY,
+            date INTEGER NOT NULL
+            );
+
+        CREATE TABLE reports (
+            user_id INTEGER NOT NULL,
+            match_id INTEGER NOT NULL,
+            games INTEGER NOT NULL,
+            deck TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (user_id),
+            FOREIGN KEY (match_id) REFERENCES matches (match_id)
+            );
+    ''')
+    conn.commit()
+    c.close()
+    conn.close()
+
+def _create_user_entry(db: str, user: User):
+    conn = sqlite3.connect(db)
     c = conn.cursor()
     c.execute('SELECT user_id FROM users WHERE user_id=(?)', (user.id,))
     if c.fetchone() is None:
@@ -17,8 +56,8 @@ def create_user_entry(user: User):
     c.close()
     conn.close()
 
-def create_match_entry():
-    conn = sqlite3.connect(MATCH_DB)
+def _create_match_entry(db: str):
+    conn = sqlite3.connect(db)
     statement = '''INSERT INTO matches (date) VALUES (strftime('%s', 'now'))'''
     c = conn.cursor()
     c.execute(statement)
@@ -28,8 +67,8 @@ def create_match_entry():
     conn.close()
     return match_id
 
-def create_report_entry(user: User, match_id: int, games: int):
-    conn = sqlite3.connect(MATCH_DB)
+def _create_report_entry(db: str, user: User, match_id: int, games: int):
+    conn = sqlite3.connect(db)
     statement = '''INSERT INTO reports (user_id, match_id, games) VALUES(?, ?, ?)'''
     c = conn.cursor()
     c.execute(statement, (user.id, match_id, games))
@@ -37,8 +76,9 @@ def create_report_entry(user: User, match_id: int, games: int):
     c.close()
     conn.close()
 
-def get_leaderboard(time: float):
-    conn = sqlite3.connect(MATCH_DB)
+def get_leaderboard(guild_id: int, time: float):
+    db = _check_db(guild_id)
+    conn = sqlite3.connect(db)
     statement = f'''SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
                     FROM reports w
                     INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
@@ -55,10 +95,11 @@ def get_leaderboard(time: float):
     conn.close()
     return results
 
-def get_stat(time: float, user: str):
-    conn = sqlite3.connect(MATCH_DB)
+def get_stat(guild_id: int, time: float, user: int):
+    db = _check_db(guild_id)
+    conn = sqlite3.connect(db)
     statement = f'''
-                SELECT DISTINCT name, SUM(w.games + l.games)
+                SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
                 FROM reports w
                 INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
                 INNER JOIN users ON w.user_id = users.user_id

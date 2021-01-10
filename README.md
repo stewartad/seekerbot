@@ -1,5 +1,5 @@
 # SeekerBot
-SeekerBot is a discord bot used for tracking Transformers TCG match reports.
+SeekerBot is a Discord bot used for tracking Transformers TCG match reports.
 
 # Usage
 
@@ -13,7 +13,7 @@ For example:
 `!report @player1 2 @player2 0`
 
 ## Stats
-Queries the stats of a single user within the given time frame.
+Queries the stats of a single user.
 
 `!stats @[user1]`
 
