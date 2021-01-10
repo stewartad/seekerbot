@@ -56,10 +56,12 @@ async def leaderboard(ctx, time='week'):
         return
     results = get_leaderboard(timestamp)
     
-    entry_str = '{:2}. {:<16} {:<6}'
-    rows = [entry_str.format('No', 'User', 'Matches')]
+    header_str = '{:2}. {:<16} {:<6} {:<6} {:4}'
+    entry_str = '{:2}. {:<16} {:<6} {:<6} {:.2%}'
+    rows = [header_str.format('No', 'User', 'Games', 'Won', 'Win %')]
     for idx, val in enumerate(results):
-        rows.append(entry_str.format(idx+1, val[0], val[1]))
+        win_percent = float(val[2]) / float(val[1])
+        rows.append(entry_str.format(idx+1, val[0], val[1], val[2], win_percent))
     newline = '\n'
     message = f'```{newline.join(rows)}```'
     await ctx.send(message)
