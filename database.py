@@ -39,14 +39,33 @@ def create_report_entry(user: User, match_id: int, games: int):
 
 def get_leaderboard(time: float):
     conn = sqlite3.connect(MATCH_DB)
-    statement = f'''SELECT name, SUM(reports.games) 
-                FROM users
-                INNER JOIN reports ON users.user_id = reports.user_id
-                INNER JOIN matches ON reports.match_id = matches.match_id
-                WHERE matches.date >= {time}
-                GROUP BY reports.user_id
-                ORDER BY SUM(reports.games);
+    statement = f'''SELECT DISTINCT name, SUM(w.games + l.games)
+                    FROM reports w
+                    INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
+                    INNER JOIN users ON w.user_id = users.user_id
+                    WHERE matches.date >= {time}
+                    GROUP BY w.user_id
+                    ORDER BY SUM(w.games + l.games);
                 '''
     c = conn.cursor()
     c.execute(statement)
-    return c.fetchall()
+    results = c.fetchall()
+    c.close()
+    conn.close()
+    return results
+
+def get_stat(time: float, user: str):
+    conn = sqlite3.connect(MATCH_DB)
+    statement = f'''
+                SELECT DISTINCT name, SUM(w.games + l.games)
+                FROM reports w
+                INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
+                INNER JOIN users ON w.user_id = users.user_id
+                WHERE matches.date >= {time} AND w.user_id = {user}
+                '''
+    c = conn.cursor()
+    c.execute(statement)
+    results = c.fetchall()
+    c.close()
+    conn.close()
+    return results
