@@ -7,7 +7,6 @@ from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-DATABASE = ''
 
 bot = commands.Bot(command_prefix='!')
 
@@ -45,31 +44,39 @@ async def stats(ctx, user: User):
     if user not in bot.users:
         await ctx.send(f'User {user} not found')
         return
-    week_timestamp = get_starting_timestamp('week')
-    result = get_stat(week_timestamp, user.id)
+    rows = [f'Stats for {user}']
+    entry_str = '{:10}: {:<6} {:<6} {:.2%}'
 
-    month_timestamp = get_starting_timestamp('month')
-    result = get_stat(month_timestamp, user.id)
+    result = get_stat(ctx.guild.id, 'week', user.id)
+    winrate = float(result[1]) / float(result[0])
+    rows.append(entry_str.format('Week', result[0], result[1], winrate))
 
-    year_timestamp = get_starting_timestamp('year')
-    result = get_stat(year_timestamp, user.id)
+    result = get_stat(ctx.guild.id, 'month', user.id)
+    winrate = float(result[1]) / float(result[0])
+    rows.append(entry_str.format('Month', result[0], result[1], winrate))
 
-    result = get_stat(0, user.id)
+    result = get_stat(ctx.guild.id, 'year', user.id)
+    winrate = float(result[1]) / float(result[0])
+    rows.append(entry_str.format('Year', result[0], result[1], winrate))
+
+    result = get_stat(ctx.guild.id, '', user.id)
+    winrate = float(result[1]) / float(result[0])
+    rows.append(entry_str.format('All Time', result[0], result[1], winrate))
+
+    newline = '\n'
+    message = f'```{newline.join(rows)}```'
+    await ctx.send(message)
 
 @bot.command(name='leaderboard')
 async def leaderboard(ctx, time='week'):
-    timestamp = get_starting_timestamp(time)
-    if timestamp is None:
-        await ctx.send(f'Invalid time {time}')
-        return
-    results = get_leaderboard(ctx.guild.id, timestamp)
+    results = get_leaderboard(ctx.guild.id, time)
     
     header_str = '{:2}. {:<16} {:<6} {:<6} {:4}'
     entry_str = '{:2}. {:<16} {:<6} {:<6} {:.2%}'
     rows = [header_str.format('No', 'User', 'Games', 'Won', 'Win %')]
     for idx, val in enumerate(results):
-        win_percent = float(val[2]) / float(val[1])
-        rows.append(entry_str.format(idx+1, val[0], val[1], val[2], win_percent))
+        winrate = float(val[2]) / float(val[1])
+        rows.append(entry_str.format(idx+1, val[0], val[1], val[2], winrate))
     newline = '\n'
     message = f'```{newline.join(rows)}```'
     await ctx.send(message)

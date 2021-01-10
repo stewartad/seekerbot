@@ -1,5 +1,7 @@
 seeker-env
 .env
-queries.sql
+*.sql
 *.db
 __pycache__
+populate.py
+link.txt

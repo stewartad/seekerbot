@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from util import get_starting_timestamp
 from discord.user import User
 from dotenv import load_dotenv
 
@@ -76,17 +77,19 @@ def _create_report_entry(db: str, user: User, match_id: int, games: int):
     c.close()
     conn.close()
 
-def get_leaderboard(guild_id: int, time: float):
+def get_leaderboard(guild_id: int, time: str):
     db = _check_db(guild_id)
+    timestamp = get_starting_timestamp(time)
+    print(timestamp)
     conn = sqlite3.connect(db)
     statement = f'''SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
                     FROM reports w
                     INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
                     INNER JOIN users ON w.user_id = users.user_id
                     INNER JOIN matches ON w.match_id = matches.match_id
-                    WHERE matches.date >= {time}
+                    WHERE matches.date >= {timestamp}
                     GROUP BY w.user_id
-                    ORDER BY SUM(w.games + l.games);
+                    ORDER BY SUM(w.games + l.games) DESC;
                 '''
     c = conn.cursor()
     c.execute(statement)
@@ -95,20 +98,22 @@ def get_leaderboard(guild_id: int, time: float):
     conn.close()
     return results
 
-def get_stat(guild_id: int, time: float, user: int):
+def get_stat(guild_id: int, time: str, user: int):
     db = _check_db(guild_id)
+    timestamp = get_starting_timestamp(time)
+    print(timestamp)
     conn = sqlite3.connect(db)
     statement = f'''
-                SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
+                SELECT SUM(w.games + l.games), SUM(w.games)
                 FROM reports w
                 INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
                 INNER JOIN users ON w.user_id = users.user_id
                 INNER JOIN matches ON w.match_id = matches.match_id
-                WHERE matches.date >= {time} AND w.user_id = {user}
+                WHERE matches.date >= {timestamp} AND w.user_id = {user}
                 '''
     c = conn.cursor()
     c.execute(statement)
-    results = c.fetchall()
+    results = c.fetchone()
     c.close()
     conn.close()
     return results

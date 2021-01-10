@@ -1,13 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def get_starting_timestamp(time):
-    now = datetime.now()
+    now = datetime.today()
     if time == 'week':
-        now_iso = now.isocalendar()
-        return datetime.fromisocalendar(now_iso[0], now_iso[1], 1).timestamp()
+        weekstart = now - timedelta(days=now.weekday())
+        return weekstart.timestamp()
     elif time == 'month':
-        return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
+        return now.replace(day = 1).timestamp()
     elif time == 'year':
-        return now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
+        return now.replace(month=1, day=1).timestamp()
     else:
-        return None
+        return 0
