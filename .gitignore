@@ -2,3 +2,4 @@ seeker-env
 .env
 queries.sql
 *.db
+__pycache__
