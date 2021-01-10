@@ -10,4 +10,4 @@ def get_starting_timestamp(timeframe):
     elif timeframe == 'year':
         return now.replace(month=1, day=1).timestamp()
     else:
-        return datetime(2018, 1, 1, 0, 0, 0, 0, timezone.utc)
+        return datetime(2018, 1, 1, 0, 0, 0, 0, timezone.utc).timestamp()
