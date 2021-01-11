@@ -80,7 +80,6 @@ def _create_report_entry(db: str, user: User, match_id: int, games: int):
 def get_leaderboard(guild_id: int, time: str):
     db = _check_db(guild_id)
     timestamp = get_starting_timestamp(time)
-    print(timestamp)
     conn = sqlite3.connect(db)
     statement = f'''SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
                     FROM reports w
@@ -101,7 +100,6 @@ def get_leaderboard(guild_id: int, time: str):
 def get_stat(guild_id: int, time: str, user: int):
     db = _check_db(guild_id)
     timestamp = get_starting_timestamp(time)
-    print(timestamp)
     conn = sqlite3.connect(db)
     statement = f'''
                 SELECT SUM(w.games + l.games), SUM(w.games)

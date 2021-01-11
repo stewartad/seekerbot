@@ -44,8 +44,10 @@ async def stats(ctx, user: User):
     if user not in bot.users:
         await ctx.send(f'User {user} not found')
         return
-    rows = [f'Stats for {user}']
-    entry_str = '{:10}: {:<6} {:<6} {:.2%}'
+    
+    header_str = '{:>9}\t {:<6} {:<6} {:6}'
+    entry_str = '{:>9}\t {:<6} {:<6} {:.2%}'
+    rows = [f'Stats for {user}', header_str.format('Timeframe', 'Games', 'Won', 'Win %')]
 
     result = get_stat(ctx.guild.id, 'week', user.id)
     winrate = float(result[1]) / float(result[0])
