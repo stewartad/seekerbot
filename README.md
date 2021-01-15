@@ -15,9 +15,9 @@ For example:
 ## Stats
 Queries the stats of a single user.
 
-`!stats @[user1]`
+`!stats @user1`
 
 ## Leaderboard
-Gets the users that won the most within the given time frame. Defaults to weekly leaderboards. 
+Gets the users that won the most within the given time frame. Defaults to 10 entries in a weekly leaderboard. 
 
-`!leaderboard [week|month|year]`
+`!leaderboard [# of entries] [week|month|year|all]`
