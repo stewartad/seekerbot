@@ -4,11 +4,13 @@ from database import *
 from discord.user import User
 from dotenv import load_dotenv
 from discord.ext import commands
+import typing
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix='!')
+timeframes = ['week', 'month', 'year', 'all']
 
 @bot.event
 async def on_ready():
@@ -70,15 +72,19 @@ async def stats(ctx, user: User):
     await ctx.send(message)
 
 @bot.command(name='leaderboard')
-async def leaderboard(ctx, time='week'):
+async def leaderboard(ctx, count: typing.Optional[int] = 10, time: typing.Optional[str] = 'week'):
     results = get_leaderboard(ctx.guild.id, time)
+
+    if time not in timeframes:
+        await ctx.send('Invalid time. Use week, month, year, or all')
+        return
     
     header_str = '{:2}. {:<16} {:<6} {:<6} {:4}'
     entry_str = '{:2}. {:<16} {:<6} {:<6} {:.2%}'
     rows = [header_str.format('No', 'User', 'Games', 'Won', 'Win %')]
-    for idx, val in enumerate(results):
+    for idx, val in enumerate(results[:count]):
         winrate = float(val[2]) / float(val[1])
-        rows.append(entry_str.format(idx+1, val[0], val[1], val[2], winrate))
+        rows.append(entry_str.format(idx+1, val[0][:16], val[1], val[2], winrate))
     newline = '\n'
     message = f'```{newline.join(rows)}```'
     await ctx.send(message)
