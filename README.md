@@ -1,6 +1,8 @@
 # SeekerBot
 SeekerBot is a Discord bot used for tracking Transformers TCG match reports.
 
+[Add to Your Server](https://discord.com/api/oauth2/authorize?client_id=797931758975975475&permissions=67584&scope=bot)
+
 # Usage
 
 ## Report
