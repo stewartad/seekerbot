@@ -4,7 +4,7 @@
 - [x] all-time leaderboard
 - [x] customizable leaderboard cutoff
 - [ ] user stats with overall place
-- [ ] undo last report feature
+- [x] undo last report feature
 - [ ] more precise time controls
 - [ ] get total games for a given time period
 
