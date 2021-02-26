@@ -17,6 +17,17 @@ async def on_ready():
     for guild in bot.guilds:
         print(guild)
 
+@bot.command(name='undo')
+async def undo(ctx):
+    user = ctx.author
+    results = undo_last_report(ctx.guild.id, user.id)
+    msg = ''
+    if results is None:
+        msg = 'Matches can only be undone within 5 minutes of the report.'
+    else:
+        msg = f'{user.mention}\'s most recent match deleted.'
+    await ctx.send(msg)
+
 @bot.command(name='report')
 async def report(ctx, user1: User, user1_games: int, user2: User, user2_games: int):
     if user1 not in bot.users:

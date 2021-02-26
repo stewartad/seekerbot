@@ -3,6 +3,7 @@ import os
 from util import get_starting_timestamp
 from discord.user import User
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 def report_match(guild_id: int, user1: User, user1_games: int, user2: User, user2_games: int):
     db = _check_db(guild_id)
@@ -81,17 +82,17 @@ def get_leaderboard(guild_id: int, time: str):
     db = _check_db(guild_id)
     timestamp = get_starting_timestamp(time)
     conn = sqlite3.connect(db)
-    statement = f'''SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
+    statement = '''SELECT DISTINCT name, SUM(w.games + l.games), SUM(w.games)
                     FROM reports w
                     INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
                     INNER JOIN users ON w.user_id = users.user_id
                     INNER JOIN matches ON w.match_id = matches.match_id
-                    WHERE matches.date >= {timestamp}
+                    WHERE matches.date >= ?
                     GROUP BY w.user_id
                     ORDER BY SUM(w.games + l.games) DESC;
                 '''
     c = conn.cursor()
-    c.execute(statement)
+    c.execute(statement, (timestamp, ))
     results = c.fetchall()
     c.close()
     conn.close()
@@ -101,17 +102,54 @@ def get_stat(guild_id: int, time: str, user: int):
     db = _check_db(guild_id)
     timestamp = get_starting_timestamp(time)
     conn = sqlite3.connect(db)
-    statement = f'''
+    statement = '''
                 SELECT SUM(w.games + l.games), SUM(w.games)
                 FROM reports w
                 INNER JOIN reports l ON w.match_id = l.match_id AND w.user_id <> l.user_id
                 INNER JOIN users ON w.user_id = users.user_id
                 INNER JOIN matches ON w.match_id = matches.match_id
-                WHERE matches.date >= {timestamp} AND w.user_id = {user}
+                WHERE matches.date >= ? AND w.user_id = ?
                 '''
     c = conn.cursor()
-    c.execute(statement)
+    c.execute(statement, (timestamp, user))
     results = c.fetchone()
+    c.close()
+    conn.close()
+    return results
+
+def undo_last_report(guild_id: int, user: int):
+    db = _check_db(guild_id)
+    timestamp = (datetime.now() - timedelta(minutes=5)).timestamp()
+    query_statement = '''
+                SELECT m.match_id
+                FROM matches m
+                INNER JOIN reports ON m.match_id = reports.match_id
+                WHERE m.date >= ? AND reports.user_id = ?
+                ORDER BY m.date DESC
+                LIMIT 1
+                '''
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    c.execute(query_statement, (timestamp, user))
+    results = c.fetchone()
+    
+    if results is None:
+        return None
+    match_id = results[0]
+
+    remove_match = '''
+                    DELETE FROM matches
+                    WHERE match_id = ?
+                    '''
+    remove_reports = '''
+                    DELETE FROM reports
+                    WHERE match_id = ?
+                    '''
+
+    c.execute(remove_match, (match_id, ))
+    c.execute(remove_reports, (match_id, ))
+    
+    conn.commit()
     c.close()
     conn.close()
     return results
