@@ -46,26 +46,21 @@ async def stats(ctx, user: User):
     if user not in bot.users:
         await ctx.send(f'User {user} not found')
         return
-    
     header_str = '{:>9}\t {:<6} {:<6} {:6}'
     entry_str = '{:>9}\t {:<6} {:<6} {:.2%}'
     rows = [f'Stats for {user}', header_str.format('Timeframe', 'Games', 'Won', 'Win %')]
 
-    result = get_stat(ctx.guild.id, 'week', user.id)
-    winrate = float(result[1]) / float(result[0])
-    rows.append(entry_str.format('Week', result[0], result[1], winrate))
+    won, total, winrate = _get_winrate(ctx.guild.id, 'week', user.id)
+    rows.append(entry_str.format('Week', total, won, winrate))
 
-    result = get_stat(ctx.guild.id, 'month', user.id)
-    winrate = float(result[1]) / float(result[0])
-    rows.append(entry_str.format('Month', result[0], result[1], winrate))
+    won, total, winrate = _get_winrate(ctx.guild.id, 'month', user.id)
+    rows.append(entry_str.format('Month', total, won, winrate))
 
-    result = get_stat(ctx.guild.id, 'year', user.id)
-    winrate = float(result[1]) / float(result[0])
-    rows.append(entry_str.format('Year', result[0], result[1], winrate))
+    won, total, winrate = _get_winrate(ctx.guild.id, 'year', user.id)
+    rows.append(entry_str.format('Year', total, won, winrate))
 
-    result = get_stat(ctx.guild.id, '', user.id)
-    winrate = float(result[1]) / float(result[0])
-    rows.append(entry_str.format('All Time', result[0], result[1], winrate))
+    won, total, winrate = _get_winrate(ctx.guild.id, '', user.id)
+    rows.append(entry_str.format('All Time', total, won, winrate))
 
     newline = '\n'
     message = f'```{newline.join(rows)}```'
@@ -88,5 +83,26 @@ async def leaderboard(ctx, count: typing.Optional[int] = 10, time: typing.Option
     newline = '\n'
     message = f'```{newline.join(rows)}```'
     await ctx.send(message)
+
+def _get_winrate(guild_id: int, time: str, user: int):
+    result = get_stat(guild_id, time, user)
+
+    won_games = result[1]
+    if won_games is None:
+        won_games = 0
+    else:
+        won_games = float(result[1])
+
+    total_games = result[0]
+    if total_games is None:
+        total_games = 0
+    else:
+        total_games = float(result[0])
+
+    if total_games == 0:
+        winrate = 0
+    else:
+        winrate = won_games / total_games
+    return won_games, total_games, winrate
 
 bot.run(TOKEN)
