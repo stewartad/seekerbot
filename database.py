@@ -5,15 +5,6 @@ from discord.user import User
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-def report_match(guild_id: int, user1: User, user1_games: int, user2: User, user2_games: int):
-    db = _check_db(guild_id)
-
-    _create_user_entry(db, user1)
-    _create_user_entry(db, user2)
-    match_id = _create_match_entry(db)
-    _create_report_entry(db, user1, match_id, user1_games)
-    _create_report_entry(db, user2, match_id, user2_games)
-
 def _check_db(guild_id: int):
     db = f'{guild_id}.db'
     if not os.path.exists(db):
@@ -77,6 +68,15 @@ def _create_report_entry(db: str, user: User, match_id: int, games: int):
     conn.commit()
     c.close()
     conn.close()
+
+def report_match(guild_id: int, user1: dict, user2: dict):
+    db = _check_db(guild_id)
+
+    _create_user_entry(db, user1['id'])
+    _create_user_entry(db, user2['id'])
+    match_id = _create_match_entry(db)
+    _create_report_entry(db, user1['id'], match_id, user1['score'])
+    _create_report_entry(db, user2['id'], match_id, user2['score'])
 
 def get_leaderboard(guild_id: int, time: str):
     db = _check_db(guild_id)

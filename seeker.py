@@ -1,4 +1,7 @@
 import os
+from re import split
+
+from discord.ext.commands.errors import BadArgument
 from util import get_starting_timestamp
 from database import *
 from discord.user import User
@@ -11,6 +14,112 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix='!')
 timeframes = ['week', 'month', 'year', 'all']
+
+class MatchReportConverter(commands.Converter):
+    def __init__(self) -> None:
+        super().__init__()
+        self.user1 = {
+            'id': '',
+            'score': 0 
+        }
+        self.user2 = {
+            'id': '',
+            'score': 0
+        }
+
+    def _get_report_string(self):
+        players = [self.user1, self.user2] if self.user1['score'] >= self.user2['score'] else [self.user2, self.user1]
+        return f"Match Report: {players[0]['id'].mention} {players[0]['score']}-{players[1]['score']} {players[1]['id'].mention}"
+    
+    async def convert(self, ctx: commands.Context, argument: str):
+        # split string by spaces
+        split_cmd = argument.split(' ')
+
+        # get users
+        member_converter = commands.MemberConverter()
+        self.user1['id'] = await member_converter.convert(ctx, split_cmd[0])
+        self.user2['id'] = await member_converter.convert(ctx, split_cmd[2])
+
+        # parse scores for two supported formats
+        failed = False
+        try:
+            # <user1> X <user2> Y <description>
+            _ = int(split_cmd[1], 10)
+            self.user1['score'] = split_cmd[1]
+            self.user2['score'] = split_cmd[3]
+        except ValueError:
+            failed = True
+
+        if failed:
+            try:
+                # <user1> X-Y <user2>
+                scores = split_cmd[1].split('-')
+                self.user1['score'] = int(scores[0])
+                self.user2['score'] = int(scores[1]) 
+            except ValueError:
+                # Could not find a score
+                raise BadArgument()
+
+        report_match(ctx.guild.id, self.user1, self.user2)
+        return self._get_report_string()
+
+class Seeker(commands.Cog):
+    
+    def __init__(self):
+        pass
+
+    @commands.command(name='undo')
+    async def undo(self, ctx):
+        pass
+
+    @undo.error
+    async def undo_error(self, ctx, error):
+        pass
+
+    @commands.command(name='report')
+    async def report(self, ctx, *, report: MatchReportConverter):
+        await ctx.send(report)
+
+    @report.error
+    async def report_error(self, ctx, err):
+        pass
+
+    @commands.command(name='stats')
+    async def stats(self, ctx, user: User):
+        pass
+
+    @stats.error
+    async def stats_error(self, ctx, err):
+        pass
+
+    @commands.command(name='leaderboard')
+    async def leaderboard(self, ctx, count: typing.Optional[int] = 10, time: typing.Optional[str] = 'week'):
+        pass
+
+    @leaderboard.error
+    async def leaderboard_error(self, ctx, err):
+        pass
+
+def _get_winrate(guild_id: int, time: str, user: int):
+    result = get_stat(guild_id, time, user)
+
+    won_games = result[1]
+    if won_games is None:
+        won_games = 0
+    else:
+        won_games = float(result[1])
+
+    total_games = result[0]
+    if total_games is None:
+        total_games = 0
+    else:
+        total_games = float(result[0])
+
+    if total_games == 0:
+        winrate = 0
+    else:
+        winrate = won_games / total_games
+    return won_games, total_games, winrate
 
 @bot.event
 async def on_ready():
@@ -29,28 +138,8 @@ async def undo(ctx):
     await ctx.send(msg)
 
 @bot.command(name='report')
-async def report(ctx, user1: User, user1_games: int, user2: User, user2_games: int):
-    if user1 not in bot.users:
-        await ctx.send(f'User {user1} not found')
-        return
-    if user2 not in bot.users:
-        await ctx.send(f'User {user2} not found')
-        return
-    report_match(ctx.guild.id, user1, user1_games, user2, user2_games)
-
-    match_report = {}
-    if user1_games >= user2_games:
-        match_report['winner'] = user1
-        match_report['winner_games'] = user1_games
-        match_report['loser'] = user2
-        match_report['loser_games'] = user2_games
-    else:
-        match_report['winner'] = user2
-        match_report['winner_games'] = user2_games
-        match_report['loser'] = user1
-        match_report['loser_games'] = user1_games
-    message = f"Match Report: {match_report['winner'].mention} {match_report['winner_games']}-{match_report['loser_games']} {match_report['loser'].mention}"
-    await ctx.send(message)
+async def report(ctx, *, report: MatchReportConverter):
+    await ctx.send(report)
 
 @bot.command(name='stats')
 async def stats(ctx, user: User):
@@ -94,26 +183,5 @@ async def leaderboard(ctx, count: typing.Optional[int] = 10, time: typing.Option
     newline = '\n'
     message = f'```{newline.join(rows)}```'
     await ctx.send(message)
-
-def _get_winrate(guild_id: int, time: str, user: int):
-    result = get_stat(guild_id, time, user)
-
-    won_games = result[1]
-    if won_games is None:
-        won_games = 0
-    else:
-        won_games = float(result[1])
-
-    total_games = result[0]
-    if total_games is None:
-        total_games = 0
-    else:
-        total_games = float(result[0])
-
-    if total_games == 0:
-        winrate = 0
-    else:
-        winrate = won_games / total_games
-    return won_games, total_games, winrate
 
 bot.run(TOKEN)
