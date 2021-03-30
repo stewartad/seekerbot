@@ -2,7 +2,6 @@ import sqlite3
 import os
 from util import get_starting_timestamp
 from discord.user import User
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 def _check_db(guild_id: int):

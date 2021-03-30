@@ -13,11 +13,12 @@
 - [ ] event reporting
 
 # v1.3 features
-	- [ ] Seeker Commands in a Cog
+	- [x] Seeker Commands in a Cog
 	- [x] allow second match report syntax
 	- [x] parse match report in a Converter
 	- [ ] record deck names
 	- [ ] proper help responses
+	- [ ] improved database management
 
 # v2.0 features
 	- [ ] Rest API
