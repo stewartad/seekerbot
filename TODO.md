@@ -13,14 +13,16 @@
 - [ ] event reporting
 
 # v1.3 features
+
+
+# v2.0 features
 	- [x] Seeker Commands in a Cog
 	- [x] allow second match report syntax
 	- [x] parse match report in a Converter
+	- [x] proper help responses
+	- [x] leaderboard tiebreaks by winrate then alphabetic order
 	- [ ] record deck names
-	- [ ] proper help responses
 	- [ ] improved database management
-
-# v2.0 features
 	- [ ] Rest API
 
 # v2.1 features
