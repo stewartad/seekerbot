@@ -30,10 +30,10 @@ async def undo(ctx):
 
 @bot.command(name='report')
 async def report(ctx, user1: User, user1_games: int, user2: User, user2_games: int):
-    if user1 not in bot.users:
+    if not user1:
         await ctx.send(f'User {user1} not found')
         return
-    if user2 not in bot.users:
+    if not user2:
         await ctx.send(f'User {user2} not found')
         return
     report_match(ctx.guild.id, user1, user1_games, user2, user2_games)
@@ -54,7 +54,7 @@ async def report(ctx, user1: User, user1_games: int, user2: User, user2_games: i
 
 @bot.command(name='stats')
 async def stats(ctx, user: User):
-    if user not in bot.users:
+    if not user:
         await ctx.send(f'User {user} not found')
         return
     header_str = '{:>9}\t {:<6} {:<6} {:6}'

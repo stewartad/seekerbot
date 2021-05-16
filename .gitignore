@@ -5,3 +5,4 @@ seeker-env
 __pycache__
 populate.py
 link.txt
+.vscode/settings.json
