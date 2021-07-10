@@ -29,11 +29,7 @@
 	- [ ] Tournament Reporting
 
 # Per-channel reports
-	- Add channel column to matches table
-	   - update all current matches to the league channel (vectorsigma) + casual reports channel (bayformers) - *once down for maintenance*
 	- Log channel id on each report
-	- Leaderboard shows reports for only that channel
-	- Add channels to be tracked (admin feature)
 
 # Winrate leaderboard
 	- By default, leaderboard does not show winrate

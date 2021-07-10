@@ -3,7 +3,7 @@ import os
 from util import get_starting_timestamp
 from discord.user import User
 from datetime import datetime, timedelta
-from sql_constants import *
+# from sql_constants import *
 
 CREATE_DB = '''
     CREATE TABLE users (
