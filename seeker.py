@@ -1,7 +1,9 @@
+from datetime import date, timezone
 import os
 
-from discord.ext.commands.errors import BadArgument
+from discord.ext.commands.errors import BadArgument, UserNotFound
 from database import *
+from util import get_timestamps
 from discord.user import User
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -15,6 +17,8 @@ API_HOST= os.getenv('API_HOST')
 ADMIN = os.getenv('API_USER')
 PASSWD = os.getenv('API_PASSWD')
 BASE_URL = API_HOST + '/seekerbot/api'
+NL = '\n'
+
 
 class MatchReportConverter(commands.Converter):
 
@@ -114,6 +118,10 @@ class SeekerCog(commands.Cog):
         message = helper.undo(ctx.guild.id, ctx.author)
         await ctx.send(message)
 
+    @undo.error
+    async def undo_error(self, ctx, error):
+        await ctx.send(f'Error: {str(error)}')
+
     @commands.command(name='report')
     async def report(self, ctx, *, report: MatchReportConverter):
         '''
@@ -122,27 +130,42 @@ class SeekerCog(commands.Cog):
         '''
         await ctx.send(report)
 
+    @report.error
+    async def report_error(self, ctx, error):
+        await ctx.send(f'Error: {str(error)}')
+
     @commands.command(name='stats')
     async def stats(self, ctx, user: User):
         '''
         `!stats @<user>`
         '''
 
-        guild_id = 315538837474508800
-        stats_req = requests.get(f'{BASE_URL}/leaderboard/{user.id}', params={'guild_id': guild_id})
-        if stats_req.status_code != 200:
-            return f'User {user} not found'
-        stats = stats_req.json()
+        guild_id = ctx.guild.id
+        # guild_id = 315538837474508800
+
         header_fmt = '{:>9}\t {:<6} {:<6} {:6}'
         entry_fmt = '{:>9}\t {:<6} {:<6} {:.2%}'
+        entries = []
 
-        entries = [entry_fmt.format(time, stats.get('games_played'), stats.get('games_won'), stats.get('winrate')) for time in self.timeframes]
-        # wins = stats.get(time.upper()).get('games_won')
-        # games = stats.get(time.upper()).get('games_played')
-        # winrate = stats.get(time.upper()).get('winrate')
+        for i, time in enumerate(get_timestamps()):
+            stats_req = requests.get(f'{BASE_URL}/leaderboard/{user.id}', params={'guild': guild_id, 'date': int(time)})
+
+            if not stats_req.ok:
+                f = open('log.html', 'w')
+                f.write(stats_req.text)
+                return f'User {user} not found'
+
+            stats = stats_req.json()
+            entries.append(entry_fmt.format(self.timeframes[i], stats.get('games_played'), stats.get('games_won'), stats.get('winrate')))
+
+        # entries = [entry_fmt.format(time, stats[i].get('games_played'), stats[i].get('games_won'), stats[i].get('winrate')) for i, time in enumerate(self.timeframes)]
             
-        message = f'''```Stats for {user}\n{header_fmt.format('Timeframe', 'Games', 'Won', 'Win %')}\n{"\n".join(entries)}```'''
+        message = f'''```Stats for {user}{NL}{header_fmt.format('Timeframe', 'Games', 'Won', 'Win %')}{NL}{NL.join(entries)}```'''
         await ctx.send(message)
+
+    # @stats.error
+    # async def stats_error(self, ctx, error):
+    #     await ctx.send(f'Error: {str(error)}')
 
     @commands.command(name='leaderboard')
     async def leaderboard(self, ctx, count: typing.Optional[int] = 10, time: typing.Optional[str] = 'week'):
@@ -153,19 +176,21 @@ class SeekerCog(commands.Cog):
                 await ctx.send('Invalid time. Use week, month, year, or all')
                 return
 
-        guild_id = 315538837474508800
-        leaderboard = requests.get(f'{BASE_URL}/leaderboard', params={'guild_id': guild_id}).json()
+        guild_id = ctx.guild.id
+        # guild_id = 315538837474508800
+        leaderboard_req = requests.get(f'{BASE_URL}/leaderboard', params={'guild': guild_id})
+        leaderboard = leaderboard_req.json()
 
         entry_fmt = '{:2}. {:<16} {:<6} {:<6} {:.2%}'
         header_fmt = '{:2}. {:<16} {:<6} {:<6} {:4}'
         entries = [entry_fmt.format(i + 1, entry.get('name')[:16], entry.get('games_played'), entry.get('games_won'), entry.get('winrate')) for i, entry in enumerate(leaderboard[:count])]
         
-        message = f'''```{header_fmt.format('No', 'User', 'Games', 'Won', 'Win %')}\n{"\n".join(entries)}```'''
+        message = f'''```{header_fmt.format('No', 'User', 'Games', 'Won', 'Win %')}{NL}{NL.join(entries)}```'''
         await ctx.send(message)
 
-    # async def cog_command_error(self, ctx, error):
-    #     print(error)
-    #     return await ctx.send(ctx.command.help)
+    @leaderboard.error
+    async def leaderboard_error(self, ctx, error):
+        await ctx.send(f'Error: {str(error)}')
 
 
 TOKEN = os.getenv('DISCORD_TOKEN')
