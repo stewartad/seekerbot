@@ -10,6 +10,7 @@ from discord.ext import commands
 import typing
 from seekerhelper import SeekerHelper
 import requests
+import logging
 
 load_dotenv()
 helper = SeekerHelper()
@@ -52,7 +53,7 @@ class MatchReportConverter(commands.Converter):
                 sorted_args[last_user] = []
             except BadArgument:
                 if last_user is None:
-                    raise BadArgument()
+                    raise BadArgument('Insufficient number of users')
                 else:
                     sorted_args[last_user].append(arg)
 
@@ -97,6 +98,7 @@ class MatchReportConverter(commands.Converter):
         report_req = requests.post(f'{BASE_URL}/matches/', json=match, auth=(ADMIN, PASSWD))
         print(report_req.text)
         if report_req.status_code != 201:
+            logging.error(report_req.status_code)
             return 'Server Error'
         # msg = f"Match Report: {players[0]['id'].mention} {players[0]['score']}-{players[1]['score']} {players[1]['id'].mention}"
         report_str = [f"{rep.get('user').get('name')} - {rep.get('games')}" for rep in match['reports']]
@@ -132,6 +134,7 @@ class SeekerCog(commands.Cog):
 
     @report.error
     async def report_error(self, ctx, error):
+        logging.exception('')
         await ctx.send(f'Error: {str(error)}')
 
     @commands.command(name='stats')
@@ -148,7 +151,7 @@ class SeekerCog(commands.Cog):
         entries = []
 
         for i, time in enumerate(get_timestamps()):
-            stats_req = requests.get(f'{BASE_URL}/leaderboard/{user.id}', params={'guild': guild_id, 'date': int(time)})
+            stats_req = requests.get(f'{BASE_URL}/leaderboard/{user.id}', params={'guild': guild_id, 'date': int(time)}, auth=(ADMIN, PASSWD))
 
             if not stats_req.ok:
                 f = open('log.html', 'w')
@@ -163,9 +166,10 @@ class SeekerCog(commands.Cog):
         message = f'''```Stats for {user}{NL}{header_fmt.format('Timeframe', 'Games', 'Won', 'Win %')}{NL}{NL.join(entries)}```'''
         await ctx.send(message)
 
-    # @stats.error
-    # async def stats_error(self, ctx, error):
-    #     await ctx.send(f'Error: {str(error)}')
+    @stats.error
+    async def stats_error(self, ctx, error):
+        logging.exception('')
+        await ctx.send(f'Error: {str(error)}')
 
     @commands.command(name='leaderboard')
     async def leaderboard(self, ctx, count: typing.Optional[int] = 10, time: typing.Optional[str] = 'week'):
@@ -178,8 +182,13 @@ class SeekerCog(commands.Cog):
 
         guild_id = ctx.guild.id
         # guild_id = 315538837474508800
-        leaderboard_req = requests.get(f'{BASE_URL}/leaderboard', params={'guild': guild_id})
+        leaderboard_req = requests.get(f'{BASE_URL}/leaderboard', params={'guild': guild_id}, auth=(ADMIN, PASSWD))
         leaderboard = leaderboard_req.json()
+
+        if leaderboard_req.status_code != 200:
+            raise requests.RequestException(f'Error: response {leaderboard_req.status_code}')
+
+        print(leaderboard)
 
         entry_fmt = '{:2}. {:<16} {:<6} {:<6} {:.2%}'
         header_fmt = '{:2}. {:<16} {:<6} {:<6} {:4}'
@@ -190,6 +199,7 @@ class SeekerCog(commands.Cog):
 
     @leaderboard.error
     async def leaderboard_error(self, ctx, error):
+        logging.exception('')
         await ctx.send(f'Error: {str(error)}')
 
 
