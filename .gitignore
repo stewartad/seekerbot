@@ -5,6 +5,8 @@ __pycache__
 populate.py
 link.txt
 sql_constants.py
+database.py
+seekerhelper.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
