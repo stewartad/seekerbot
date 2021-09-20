@@ -9,5 +9,32 @@
 - [ ] get total games for a given time period
 
 # Large Scale
-
+- [ ] Frontend website
 - [ ] event reporting
+
+# v1.3 features
+
+
+# v2.0 features
+	- [x] Seeker Commands in a Cog
+	- [x] allow second match report syntax
+	- [x] parse match report in a Converter
+	- [x] proper help responses
+	- [x] leaderboard tiebreaks by winrate then alphabetic order
+	- [ ] record deck names
+	- [ ] improved database management
+	- [ ] Rest API
+
+# v2.1 features
+	- [ ] Tournament Reporting
+
+# Per-channel reports
+	- Log channel id on each report
+
+# Winrate leaderboard
+	- By default, leaderboard does not show winrate
+	- a winrate argument will show it
+
+# Deck logging
+	- reports can have a deck added for each player
+	- for playtesting, enforce that the deck name is from a list of strings
