@@ -4,18 +4,15 @@ import os
 import re
 
 from discord.ext.commands.errors import BadArgument, UserNotFound
-from database import *
 from util import get_timestamps
 from discord.user import User
 from dotenv import load_dotenv
 from discord.ext import commands
 import typing
-from seekerhelper import SeekerHelper
 import requests
 import logging
 
 load_dotenv()
-helper = SeekerHelper()
 API_HOST= os.getenv('API_HOST')
 ADMIN = os.getenv('API_USER')
 PASSWD = os.getenv('API_PASSWD')
@@ -129,7 +126,7 @@ class SeekerCog(commands.Cog):
 
         Undoes the last match played within the past hour in which the sender participated in
         '''
-        message = helper.undo(ctx.guild.id, ctx.author)
+        message = 'Undo not yet implemented'
         await ctx.send(message)
 
     @undo.error
