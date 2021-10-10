@@ -129,6 +129,12 @@ class SeekerCog(commands.Cog):
 
         Undoes the last match played within the past hour in which the sender participated in
         '''
+        guild_id = ctx.guild_id
+
+        ## TODO Figure out which match to delete
+
+        get_latest_matches = requests.get(f'{BASE_URL}/matches/')
+        undo_req = requests.delete(f'{BASE_URL}/matches/')
         message = helper.undo(ctx.guild.id, ctx.author)
         await ctx.send(message)
 
