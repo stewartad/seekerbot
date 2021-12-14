@@ -6,13 +6,11 @@ import re
 from discord.ext.commands.errors import BadArgument, UserNotFound
 from util import get_timestamps
 from discord.user import User
-from dotenv import load_dotenv
 from discord.ext import commands
 import typing
 import requests
 import logging
 
-load_dotenv()
 API_HOST= os.getenv('API_HOST')
 ADMIN = os.getenv('API_USER')
 PASSWD = os.getenv('API_PASSWD')
