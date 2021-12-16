@@ -17,13 +17,15 @@
 
 # v2.0 features
 	- [x] Seeker Commands in a Cog
-	- [x] allow second match report syntax
 	- [x] parse match report in a Converter
 	- [x] proper help responses
 	- [x] leaderboard tiebreaks by winrate then alphabetic order
-	- [ ] record deck names
-	- [ ] improved database management
-	- [ ] Rest API
+	- [x] record deck names
+	- [x] improved database management
+	- [x] Rest API
+	- [ ] Deck matchup stats
+	- [ ] User stats performance improvements
+	- [ ] More precise time controls
 
 # v2.1 features
 	- [ ] Tournament Reporting

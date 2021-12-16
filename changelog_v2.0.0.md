@@ -1,4 +1,4 @@
-# SeekerBot 2.0.0 beta 1
+# SeekerBot 2.0.0
 
 ## New Features
 
@@ -21,7 +21,11 @@ Primus matches can now be properly reported to SeekerBot. The syntax is the same
 
 ![](primusexample.png)
 
+### User Stats Changes
+Per-user stats is one of the lesser used features of SeekerBot. Currently, stats just shows your personal wins/total games entry within each leaderboard. It does not give any information that is not presented in leaderboard output. In the future, I want to expand the amount of stats that SeekerBot provides, but for now the stats command now follows wins/total games in the past 30 days, 90 days, and all time to provide something (slightly) different than the leaderboard command.
 
+### Undo Match Reports
+The undo command will now attempt to undo the most recent game that the user participated in, instead of the most recent game the user reported. The undo time limit has increased to 60 minutes.
 
 ## Other Changes
 
@@ -30,9 +34,6 @@ These are some smaller changes to address some feedback
 - Leaderboard time cutoffs now follow EST timezone
 - Added help text with examples for each command
 
-These are features coming in the full 2.0.0 release but are currently unavailable in beta1
-
-- Stats command for decks
-- Undo match report w/ increased time limit to 1 hour (This was available in 1.2 but needs to be implemented again in the new system)
-- User stats command speed improvements
-- Command options for accessing past leaderboards (For example, see the leaderboard for July 2021)
+These are features that have been pushed to the next minor release
+- [ ] Stats command for decks
+- [ ] Command options for accessing past leaderboards (For example, see the leaderboard for July 2021)
