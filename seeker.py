@@ -1,10 +1,8 @@
-from datetime import date, timezone
-import enum
+from datetime import date, timezone, datetime, timedelta
 import os
 import re
 
 from discord.ext.commands.errors import BadArgument, UserNotFound
-from util import get_timestamps
 from discord.user import User
 from discord.ext import commands
 import typing
@@ -18,7 +16,11 @@ BASE_URL = API_HOST + '/seekerbot/api'
 NL = '\n'
 
 
-class NoGamesRecordedError(Exception):
+class SeekerError(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+class NoGamesRecordedError(SeekerError):
     def __init__(self, user, *args: object) -> None:
         self.user = user
         self.message = f'No games on record for {self.user} in this guild.'
@@ -124,12 +126,35 @@ class SeekerCog(commands.Cog):
 
         Undoes the last match played within the past hour in which the sender participated in
         '''
-        message = 'Undo not yet implemented'
+
+        now = datetime.now(timezone.utc) + timedelta(minutes=1)
+        prev_hour = now - timedelta(hours=1, minutes=1)
+        request_params = {
+            'guild': ctx.guild.id,
+            'channel_id': ctx.channel.id,
+            'start_date': int(prev_hour.timestamp()),
+            'end_date': int(now.timestamp()),
+            'reports__user': ctx.author.id
+        }
+        match_req = requests.get(f'{BASE_URL}/matches', request_params, auth=(ADMIN, PASSWD))
+        if not match_req.ok:
+            raise SeekerError('Error occurred')
+        if len(match_req.json()) < 1:
+            raise SeekerError('No match to undo')
+        most_recent_match = match_req.json()[0]
+        undo_req = requests.delete(f'{BASE_URL}/matches/{most_recent_match["match_id"]}', auth=(ADMIN, PASSWD))
+        if not undo_req.ok:
+            raise SeekerError('Could not undo match')
+        
+        message = f'{ctx.author.name}\'s most recent match deleted'
         await ctx.send(message)
 
     @undo.error
     async def undo_error(self, ctx, error):
-        await ctx.send(str(error))
+        if isinstance(error, SeekerError):
+            await ctx.send(str(error))
+        else:
+            await ctx.send('Unknown Error Occurred')
 
     @commands.command(name='report')
     async def report(self, ctx, *, report: MatchReportConverter):
@@ -143,6 +168,7 @@ class SeekerCog(commands.Cog):
     async def report_error(self, ctx, error):
         logging.exception('')
         await ctx.send(f'Error: {str(error)}')
+        
 
     @commands.command(name='stats')
     async def stats(self, ctx, user: User):
@@ -150,23 +176,20 @@ class SeekerCog(commands.Cog):
         `!stats @<user>`
         '''
 
-        guild_id = ctx.guild.id
-        # guild_id = 315538837474508800
-
         header_fmt = '{:>9}\t {:<6} {:<6} {:6}'
-        entry_fmt = '{:>9}\t {:<6} {:<6} {:.2%}'
+        entry_fmt = '{:>9}\t {:<6.0f} {:<6.0f} {:.1%}'
+        
+        stats_req = requests.get(f'{BASE_URL}/users/{user.id}', auth=(ADMIN, PASSWD))
+        if not stats_req.ok:
+            raise NoGamesRecordedError(user)
+
         entries = []
-
-        for i, time in enumerate(get_timestamps()):
-            stats_req = requests.get(f'{BASE_URL}/leaderboard/{user.id}', params={'guild': guild_id, 'date': int(time)}, auth=(ADMIN, PASSWD))
-
-            if not stats_req.ok:
-                raise NoGamesRecordedError(user)
-
-            stats = stats_req.json()
-            entries.append(entry_fmt.format(self.timeframes[i], stats.get('games_played'), stats.get('games_won'), stats.get('winrate')))
-
-        # entries = [entry_fmt.format(time, stats[i].get('games_played'), stats[i].get('games_won'), stats[i].get('winrate')) for i, time in enumerate(self.timeframes)]
+        stats = stats_req.json().get('stats')
+        for key, value in stats.items():
+            data = [key, value['games_played'], value['games_won'], value['winrate']]
+            if key == '0d':
+                data[0] = 'All time'
+            entries.append(entry_fmt.format(*data))
             
         message = f'''```Stats for {user}{NL}{header_fmt.format('Timeframe', 'Games', 'Won', 'Win %')}{NL}{NL.join(entries)}```'''
         await ctx.send(message)
@@ -186,7 +209,6 @@ class SeekerCog(commands.Cog):
                 return
 
         guild_id = ctx.guild.id
-        # guild_id = 315538837474508800
         leaderboard_req = requests.get(f'{BASE_URL}/leaderboard', params={'guild': guild_id}, auth=(ADMIN, PASSWD))
         leaderboard = leaderboard_req.json()
 
@@ -216,8 +238,6 @@ class SeekerCog(commands.Cog):
                 await ctx.send('Invalid time. Use week, month, year, or all')
                 return
 
-        guild_id = ctx.guild.id
-        # guild_id = 315538837474508800
         leaderboard_req = requests.get(f'{BASE_URL}/decks', 
             params={
                 'guild': ctx.guild.id,
