@@ -12,7 +12,11 @@ import logging
 API_HOST= os.getenv('API_HOST')
 ADMIN = os.getenv('API_USER')
 PASSWD = os.getenv('API_PASSWD')
-BASE_URL = API_HOST + '/seekerbot/api'
+
+if API_HOST is None or ADMIN is None or PASSWD is None:
+    logging.error('Missing env variables')
+
+BASE_URL = f'{API_HOST}/seekerbot/api'
 NL = '\n'
 
 
@@ -259,13 +263,30 @@ class SeekerCog(commands.Cog):
         await ctx.send(message)
 
 
-TOKEN = os.getenv('DISCORD_TOKEN')
-bot = commands.Bot(command_prefix='!')
+if __name__ == '__main__':
+    TOKEN = os.getenv('DISCORD_TOKEN')
 
-@bot.event
-async def on_ready():
-    for guild in bot.guilds:
-        print(str(guild) + ' ' + str(guild.id))
+    logging.basicConfig(filename='seekerbot.log', level=logging.INFO)
+    logging.info('Starting SeekerBot')
+    logging.info('Attempting to connect to SeekerBot API at {API_HOST}/seekerbot')
+    try:
+        test_req = requests.get(f'{API_HOST}/seekerbot')
+        if test_req.status_code >= 400:
+            logging.error('Connection Failed')
+            exit(1)
+    except requests.exceptions.ConnectionError as e:
+        logging.error('Connection Failed')
+        logging.error(e)
+        exit(1)
 
-bot.add_cog(SeekerCog())
-bot.run(TOKEN)
+    logging.info('Connection Established')
+
+    bot = commands.Bot(command_prefix='!')
+
+    @bot.event
+    async def on_ready():
+        for guild in bot.guilds:
+            print(str(guild) + ' ' + str(guild.id))
+
+    bot.add_cog(SeekerCog())
+    bot.run(TOKEN)
